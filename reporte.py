@@ -1,4 +1,3 @@
-
 import pygame
 from conexion import Conexion
 import math
@@ -26,6 +25,7 @@ class reporte:
         self.fuente_boton = pygame.font.SysFont("Open Sans", fuente_relativa(28), bold=True)
         self.fuente_boton_agregar = pygame.font.SysFont("Open Sans", fuente_relativa(28), bold=True)
         self.fuente_boton_pdf = pygame.font.SysFont("Open Sans", fuente_relativa(28), bold=True)
+        self.fuente_pie_pagina = pygame.font.SysFont("Open Sans", fuente_relativa(24), bold=True)
 
         self.botones_opciones = ["VENTAS", "PRODUCTOS", "HORARIOS"]
         self.opcion_seleccionada = self.botones_opciones[0]
@@ -195,6 +195,11 @@ class reporte:
 
         max_lbl = fuente_eje.render(f"${self.max_ventas:.2f}", True, (0, 0, 0))
         surface.blit(max_lbl, (graf_x + 10, graf_y + 20))
+        
+        # Agregar pie de página
+        pie_ventas = self.fuente_pie_pagina.render("Ventas por día", True, (50, 50, 120))
+        pie_rect = pie_ventas.get_rect(center=(graf_x + graf_w // 2, graf_y + graf_h - 15))
+        surface.blit(pie_ventas, pie_rect)
 
     def dibujar_grafica_pastel_productos(self, surface):
         graf_x, graf_y, graf_w, graf_h = self._get_grafica_area()
@@ -239,6 +244,11 @@ class reporte:
             texto = f"{nombre}: {unidades} ({porcentaje:.1f}%)"
             lbl = fuente_leyenda.render(texto, True, (0, 0, 0))
             surface.blit(lbl, (leyenda_x + 38, leyenda_y + i * 38 + 4))
+            
+        # Agregar pie de página
+        pie_productos = self.fuente_pie_pagina.render("Productos más vendidos", True, (50, 50, 120))
+        pie_rect = pie_productos.get_rect(center=(graf_x + graf_w // 2, graf_y + graf_h - 15))
+        surface.blit(pie_productos, pie_rect)
 
     def dibujar_porcion_pastel(self, surface, cx, cy, r, ang_ini, ang_fin, color):
         ang_ini_rad = math.radians(ang_ini)
@@ -297,6 +307,11 @@ class reporte:
         fuente_eje = pygame.font.SysFont("Open Sans", int(0.025 * self.alto))
         max_lbl = fuente_eje.render(f"{self.max_ventas_hora}", True, (0, 0, 0))
         surface.blit(max_lbl, (graf_x + 10, graf_y + 20))
+        
+        # Agregar pie de página
+        pie_horarios = self.fuente_pie_pagina.render("Hora de mayor venta", True, (50, 50, 120))
+        pie_rect = pie_horarios.get_rect(center=(graf_x + graf_w // 2, graf_y + graf_h - 15))
+        surface.blit(pie_horarios, pie_rect)
 
     def handle_event(self, event):
         if event.type == pygame.MOUSEBUTTONDOWN:
@@ -337,6 +352,7 @@ class reporte:
             encabezado = ["Día", "Total ($)"]
             nombre_pdf = "reporte_ventas.pdf"
             nombre_img = "grafica_ventas.png"
+            titulo_pdf = "Ventas por día"
         elif self.opcion_seleccionada == "PRODUCTOS":
             self.cargar_productos_mas_vendidos()
             self.dibujar_grafica_pastel_productos(temp_surface)
@@ -344,6 +360,7 @@ class reporte:
             encabezado = ["Producto", "Unidades"]
             nombre_pdf = "reporte_productos.pdf"
             nombre_img = "grafica_productos.png"
+            titulo_pdf = "Productos más vendidos"
         elif self.opcion_seleccionada == "HORARIOS":
             self.cargar_ventas_por_hora()
             self.dibujar_grafica_lineas_horarios(temp_surface)
@@ -351,19 +368,20 @@ class reporte:
             encabezado = ["Hora", "Unidades"]
             nombre_pdf = "reporte_horarios.pdf"
             nombre_img = "grafica_horarios.png"
+            titulo_pdf = "Hora de mayor venta"
         else:
             return
 
         pygame.image.save(temp_surface, nombre_img)
-        self.generar_pdf(nombre_pdf, nombre_img, encabezado, datos)
+        self.generar_pdf(nombre_pdf, nombre_img, encabezado, datos, titulo_pdf)
         os.remove(nombre_img)
         print(f"PDF generado: {nombre_pdf}")
 
-    def generar_pdf(self, nombre_pdf, nombre_img, encabezado, datos):
+    def generar_pdf(self, nombre_pdf, nombre_img, encabezado, datos, titulo_pdf):
         c = canvas.Canvas(nombre_pdf, pagesize=letter)
         width, height = letter
         c.setFont("Helvetica-Bold", 20)
-        c.drawString(50, height - 50, "Reporte " + self.opcion_seleccionada.title())
+        c.drawString(50, height - 50, f"Reporte: {titulo_pdf}")
         # Imagen de la gráfica
         c.drawImage(ImageReader(nombre_img), 50, height - 400, width=500, height=300)
         # Tabla de datos
