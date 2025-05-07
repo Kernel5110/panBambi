@@ -7,6 +7,7 @@ from reporte import reporte  # Importa la clase reporte desde el módulo reporte
 from ajustes import ajustes  # Importa la clase ajustes desde el módulo ajustes.
 import datetime
 from pedido import Pedido
+from receta import Receta
 
 # Inicializar pygame
 pygame.init()  # Inicializa todos los módulos de pygame.
@@ -64,8 +65,7 @@ almacen_instancia = almacen   (x=int(0.15 * SCREEN_WIDTH), y=int(0.15 * SCREEN_H
 reporte_instancia = reporte   (x=int(0.15 * SCREEN_WIDTH), y=int(0.15 * SCREEN_HEIGHT), ancho=SCREEN_WIDTH - int(0.15 * SCREEN_WIDTH), alto=SCREEN_HEIGHT - int(0.15 * SCREEN_WIDTH))  # Crea una instancia de la clase reporte.
 ajustes_instancia = ajustes   (x=int(0.15 * SCREEN_WIDTH), y=int(0.15 * SCREEN_HEIGHT), ancho=SCREEN_WIDTH - int(0.15 * SCREEN_WIDTH), alto=SCREEN_HEIGHT - int(0.15 * SCREEN_WIDTH))  # Crea una instancia de la clase ajustes.
 pedido_instancia =  Pedido    (x=int(0.15 * SCREEN_WIDTH), y=int(0.15 * SCREEN_HEIGHT), ancho=SCREEN_WIDTH - int(0.15 * SCREEN_WIDTH), alto=SCREEN_HEIGHT - int(0.15 * SCREEN_WIDTH))
-
-
+receta_instancia =  Receta    (x=int(0.15 * SCREEN_WIDTH), y=int(0.15 * SCREEN_HEIGHT), ancho=SCREEN_WIDTH - int(0.15 * SCREEN_WIDTH), alto=SCREEN_HEIGHT - int(0.15 * SCREEN_WIDTH))
 def dibujar_interfaz(nombre_usuario):
     """
     Dibuja la interfaz gráfica completa en la ventana de pygame.
@@ -114,6 +114,7 @@ def dibujar_interfaz(nombre_usuario):
         ("VENTA", imagen_venta),
         ("ALMACEN", imagen_almacen),
         ("PEDIDO", imagen_reporte), 
+        ("RECETA", imagen_almacen),
         ("REPORTES", imagen_reporte),
         ("AJUSTES", imagen_ajuste),
         ("SALIR", imagen_salir)
@@ -121,8 +122,9 @@ def dibujar_interfaz(nombre_usuario):
 
     # Posiciones relativas para los botones
     posiciones_y = [
-        int(0.17 * h), int(0.27 * h), int(0.37 * h), int(0.47 * h), int(0.57 * h), int(0.87 * h)
-    ]  # Lista de posiciones en el eje Y para los botones.
+        int(0.17 * h), int(0.27 * h), int(0.37 * h), int(0.47 * h), int(0.57 * h), int(0.67 * h), int(0.87 * h)
+    ] 
+
     boton_height = int(0.06 * h)  # Alto de los botones.
     boton_width = int(0.14 * w)  # Ancho de los botones.
     for i, (texto, imagen) in enumerate(botones):
@@ -138,6 +140,8 @@ def dibujar_interfaz(nombre_usuario):
         almacen_instancia.dibujar_punto_venta(ventana)
     elif mostrar_pedidos:
         pedido_instancia.dibujar_pedido(ventana)
+    elif mostrar_recetas:  # Añadir esta condición
+        receta_instancia.dibujar_receta(ventana)
     elif mostrar_reportes:
         reporte_instancia.dibujar_reporte(ventana)
     elif mostrar_ajustes:
@@ -152,8 +156,9 @@ def ventas():
 mostrar_punto_venta = False
 mostrar_almacen = False
 mostrar_reportes = False
-mostrar_ajustes = False  # Variable de control para ajustes
+mostrar_ajustes = False
 mostrar_pedidos = False
+mostrar_recetas = False 
 
 def main(nombre_usuario, puesto):
     global mostrar_punto_venta
@@ -161,12 +166,13 @@ def main(nombre_usuario, puesto):
     global mostrar_pedidos
     global mostrar_reportes
     global mostrar_ajustes
+    global mostrar_recetas 
 
     # Definir permisos según el rol
     permisos = {
         "VENDEDOR": ["VENTA", "PEDIDO"],  
-        "ALMACENISTA": ["ALMACEN"],
-        "GERENTE": ["VENTA", "ALMACEN", "PEDIDO", "REPORTES", "AJUSTES"]  
+        "ALMACENISTA": ["ALMACEN", "RECETA"],  # Añadir permiso de receta al almacenista
+        "GERENTE": ["VENTA", "ALMACEN", "PEDIDO", "RECETA", "REPORTES", "AJUSTES"]  # Añadir permiso de receta al gerente
     }
 
     # Obtener permisos del usuario actual
@@ -203,23 +209,34 @@ def main(nombre_usuario, puesto):
                             mostrar_pedidos = True
                             mostrar_punto_venta = False
                             mostrar_almacen = False
+                            mostrar_recetas = False
                             mostrar_reportes = False
                             mostrar_ajustes = False
-                        elif int(0.47 * SCREEN_HEIGHT) <= mouse_y <= int(0.53 * SCREEN_HEIGHT) and "REPORTES" in permisos_usuario:
+                        elif int(0.47 * SCREEN_HEIGHT) <= mouse_y <= int(0.53 * SCREEN_HEIGHT) and "RECETA" in permisos_usuario:
+                            # Añadir esta condición para el botón de receta
+                            mostrar_recetas = True
+                            mostrar_punto_venta = False
+                            mostrar_almacen = False
+                            mostrar_pedidos = False
+                            mostrar_reportes = False
+                            mostrar_ajustes = False
+                        elif int(0.57 * SCREEN_HEIGHT) <= mouse_y <= int(0.63 * SCREEN_HEIGHT) and "REPORTES" in permisos_usuario:
                             mostrar_reportes = True
                             mostrar_punto_venta = False
                             mostrar_almacen = False
                             mostrar_pedidos = False
+                            mostrar_recetas = False
                             mostrar_ajustes = False
-                        elif int(0.57 * SCREEN_HEIGHT) <= mouse_y <= int(0.63 * SCREEN_HEIGHT) and "AJUSTES" in permisos_usuario:
+                        elif int(0.67 * SCREEN_HEIGHT) <= mouse_y <= int(0.73 * SCREEN_HEIGHT) and "AJUSTES" in permisos_usuario:
                             mostrar_ajustes = True
                             mostrar_punto_venta = False
                             mostrar_almacen = False
                             mostrar_pedidos = False
+                            mostrar_recetas = False
                             mostrar_reportes = False
                         elif int(0.87 * SCREEN_HEIGHT) <= mouse_y <= int(0.93 * SCREEN_HEIGHT):
                             en_menu = False  # Salir del menú
-                            en_menu = False  # <--- Aquí termina el ciclo del menú
+
                 # Pasa eventos a la sección activa
                 elif event.type == pygame.KEYDOWN:
                     # --- Captura de pantalla con F12 ---
@@ -228,8 +245,10 @@ def main(nombre_usuario, puesto):
                         filename = f"screenshot_{now}.png"
                         pygame.image.save(ventana, filename)
                         print(f"Captura de pantalla guardada como {filename}")
-
-                if mostrar_punto_venta:
+                
+                if mostrar_recetas:
+                    receta_instancia.handle_event(event)
+                elif mostrar_punto_venta:
                     punto_venta.handle_event(event)
                 if mostrar_pedidos:
                     pedido_instancia.handle_event(event)
@@ -239,6 +258,7 @@ def main(nombre_usuario, puesto):
                     reporte_instancia.handle_event(event)
                 elif mostrar_ajustes:
                     ajustes_instancia.handle_event(event)
+                
 
             dibujar_interfaz(nombre_usuario)
             pygame.display.flip()
@@ -249,3 +269,7 @@ def main(nombre_usuario, puesto):
 
     # Al salir del menú, regresa al login
     login.main()
+
+
+if __name__ == '__main__':
+    main('Bernardo', 'GERENTE')

@@ -7,7 +7,7 @@ from icecream import ic
 
 # Importa la conexión MySQL desde el archivo 'conexion.py' en el directorio 'db'
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), 'db')))
-from conexion import Conexion  # Importa la clase Conexion desde el módulo conexion.
+from receta import Conexion  # Importa la clase Conexion desde el módulo conexion.
 
 # Importa el menú principal desde el archivo 'menu.py'
 import menu 
