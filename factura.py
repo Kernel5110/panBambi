@@ -49,11 +49,74 @@ class Factura:
         self.BLACK = (0, 0, 0)
         self.GRAY = (200, 200, 200)
         self.BLUE = (0, 0, 255)
+        self.RED = (255, 0, 0)
+        self.GREEN = (0, 128, 0)
         self.screen = None
         self.font = None
         self.inputs = []
         self.active_field = None
         self.submit_button = None
+        self.error_message = None
+        self.error_timer = 0
+
+    def validar_rfc(self, rfc):
+        """
+        Valida que el RFC tenga el formato correcto según las reglas mexicanas.
+        Personas físicas: 13 caracteres (AAAA######XXX)
+        Personas morales: 12 caracteres (AAA######XXX)
+        Donde A=letra, #=número, X=alfanumérico
+        """
+        # Verificar longitud
+        if len(rfc) not in [12, 13]:
+            return False, "El RFC debe tener 12 o 13 caracteres"
+        
+        # RFC Persona moral (12 caracteres)
+        if len(rfc) == 12:
+            # Primeros 3 caracteres deben ser letras
+            if not rfc[:3].isalpha():
+                return False, "Los primeros 3 caracteres deben ser letras"
+            # Siguientes 6 caracteres deben ser números (fecha)
+            if not rfc[3:9].isdigit():
+                return False, "Los caracteres 4-9 deben ser dígitos (fecha)"
+            # Últimos 3 caracteres deben ser alfanuméricos
+            if not all(c.isalnum() for c in rfc[9:]):
+                return False, "Los últimos 3 caracteres deben ser alfanuméricos"
+        
+        # RFC Persona física (13 caracteres)
+        elif len(rfc) == 13:
+            # Primeros 4 caracteres deben ser letras
+            if not rfc[:4].isalpha():
+                return False, "Los primeros 4 caracteres deben ser letras"
+            # Siguientes 6 caracteres deben ser números (fecha)
+            if not rfc[4:10].isdigit():
+                return False, "Los caracteres 5-10 deben ser dígitos (fecha)"
+            # Últimos 3 caracteres deben ser alfanuméricos
+            if not all(c.isalnum() for c in rfc[10:]):
+                return False, "Los últimos 3 caracteres deben ser alfanuméricos"
+        
+        # Verificación adicional de la fecha (básica)
+        try:
+            if len(rfc) == 12:  # Persona moral
+                year = int(rfc[3:5])
+                month = int(rfc[5:7])
+                day = int(rfc[7:9])
+            else:  # Persona física
+                year = int(rfc[4:6])
+                month = int(rfc[6:8])
+                day = int(rfc[8:10])
+            
+            # Verificar mes entre 1-12
+            if month < 1 or month > 12:
+                return False, "El mes en el RFC debe estar entre 01-12"
+            
+            # Verificar día entre 1-31 (simplificado)
+            if day < 1 or day > 31:
+                return False, "El día en el RFC debe estar entre 01-31"
+                
+        except ValueError:
+            return False, "Error en la fecha del RFC"
+        
+        return True, "RFC válido"
 
     def leer_productos_de_ticket_pdf(self, pdf_path="ticket.pdf"):
         productos = []
@@ -257,6 +320,8 @@ class Factura:
 
         self.active_field = None
         self.submit_button = pygame.Rect(300, y_start + y_increment*10 + 10, 100, 40)
+        self.error_message = None
+        self.error_timer = 0
 
     def draw(self):
         self.screen.fill(self.WHITE)
@@ -280,11 +345,29 @@ class Factura:
             # Text
             text_surface = self.font.render(field["value"], True, self.BLACK)
             self.screen.blit(text_surface, (field["rect"].x + 5, field["rect"].y + 5))
+            
+            # Validación visual para el RFC (campo 3)
+            if i == 3 and field["value"]:
+                rfc_valido, mensaje = self.validar_rfc(field["value"])
+                validation_font = pygame.font.Font(None, 20)
+                if rfc_valido:
+                    validation_surface = validation_font.render("✓", True, self.GREEN)
+                else:
+                    validation_surface = validation_font.render("✗", True, self.RED)
+                self.screen.blit(validation_surface, (field["rect"].x + field["rect"].width + 10, 
+                                                    field["rect"].y + 5))
 
         # Submit button
         pygame.draw.rect(self.screen, self.BLUE, self.submit_button)
         submit_text = self.font.render("Enviar", True, self.WHITE)
         self.screen.blit(submit_text, (self.submit_button.x + 10, self.submit_button.y + 5))
+        
+        # Error message if exists and timer is active
+        if self.error_message and self.error_timer > 0:
+            error_font = pygame.font.Font(None, 24)
+            error_surface = error_font.render(self.error_message, True, self.RED)
+            self.screen.blit(error_surface, (self.submit_button.x + 120, self.submit_button.y + 10))
+            self.error_timer -= 1
 
         pygame.display.flip()
 
@@ -305,25 +388,33 @@ class Factura:
 
                 # Check if clicking submit button
                 if self.submit_button.collidepoint(event.pos):
-                    # Update cliente dictionary with new field structure
-                    self.cliente["nombre"] = self.inputs[0]["value"]
-                    self.cliente["apellido_paterno"] = self.inputs[1]["value"]
-                    self.cliente["apellido_materno"] = self.inputs[2]["value"]
-                    self.cliente["rfc"] = self.inputs[3]["value"]
-                    self.cliente["calle"] = self.inputs[4]["value"]
-                    self.cliente["municipio"] = self.inputs[5]["value"]
-                    self.cliente["estado"] = self.inputs[6]["value"]
-                    self.cliente["codigo_postal"] = self.inputs[7]["value"]
-                    self.cliente["telefono"] = self.inputs[8]["value"]
-                    self.cliente["correo"] = self.inputs[9]["value"]
+                    # Validar RFC antes de procesar
+                    rfc_valido, mensaje = self.validar_rfc(self.inputs[3]["value"])
+                    
+                    if not rfc_valido:
+                        # Mostrar mensaje de error
+                        self.error_message = mensaje
+                        self.error_timer = 180  # 3 segundos a 60 FPS
+                    else:
+                        # Actualizar diccionario del cliente con la nueva estructura de campos
+                        self.cliente["nombre"] = self.inputs[0]["value"]
+                        self.cliente["apellido_paterno"] = self.inputs[1]["value"]
+                        self.cliente["apellido_materno"] = self.inputs[2]["value"]
+                        self.cliente["rfc"] = self.inputs[3]["value"]
+                        self.cliente["calle"] = self.inputs[4]["value"]
+                        self.cliente["municipio"] = self.inputs[5]["value"]
+                        self.cliente["estado"] = self.inputs[6]["value"]
+                        self.cliente["codigo_postal"] = self.inputs[7]["value"]
+                        self.cliente["telefono"] = self.inputs[8]["value"]
+                        self.cliente["correo"] = self.inputs[9]["value"]
 
-                    # Generate PDF with productos array
-                    pdf_path = self.generar_factura_pdf(productos)
+                        # Generar PDF con el array de productos
+                        pdf_path = self.generar_factura_pdf(productos)
 
-                    # Send email with the PDF attached and close if successful
-                    if self.enviar_correo(self.cliente["correo"], pdf_path):
-                        pygame.quit()
-                        raise SystemExit
+                        # Enviar correo con el PDF adjunto y cerrar si es exitoso
+                        if self.enviar_correo(self.cliente["correo"], pdf_path):
+                            pygame.quit()
+                            raise SystemExit
 
             if event.type == pygame.KEYDOWN and self.active_field is not None:
                 field = self.inputs[self.active_field]
